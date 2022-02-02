@@ -1,0 +1,9 @@
+pytesseract
+numpy
+Pillow
+opencv-python
+fuzzywuzzy
+python-Levenshtein
+tensorflow
+keras
+pyperclip

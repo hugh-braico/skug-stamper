@@ -1,0 +1,15 @@
+__pycache__/
+failures/
+health_bars/
+green_bars_samples/
+name_guesses/
+videos/
+guesses/
+debug/
+*.mp4
+*.jpg
+*.webm
+*.part
+*.ytdl
+*.csv
+test*
