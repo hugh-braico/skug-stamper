@@ -39,7 +39,7 @@ def is_round_start(image, GAME_SIZE):
     # Correct/"expected" green colours + max allowable error
     correct_outer_green = np.array([128.9, 221.8, 218.9])
     correct_inner_green = np.array([ 69.7, 126.3,  56.6])
-    threshold = 9
+    threshold = 10
 
     # P1 outer slice
     p1x1_outer = int(GAME_SIZE*0.146)

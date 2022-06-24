@@ -122,29 +122,35 @@ def main():
 
             cv.imwrite(f"""green_bars_samples/{filename_safe_timestamp}.jpg""", image)
             
-            # Try to guess the player names.
-            p1name_img, p2name_img = get_name_imgs(image, GAME_SIZE)
-            p1name = ocr_with_fuzzy_match(p1name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p1")
-            p2name = ocr_with_fuzzy_match(p2name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p2")
+            # Try to guess the player names. Don't even try for offline games.
+            if NETPLAY == 1:
+                # Initial guess
+                p1name_img, p2name_img = get_name_imgs(image, GAME_SIZE)
+                p1name = ocr_with_fuzzy_match(p1name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p1")
+                p2name = ocr_with_fuzzy_match(p2name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p2")
 
-            # If any of the guesses are ???, just keep trying for a bit
-            # This can wait out some intro animations that cover up player names,
-            # and also moving around the stage background during gameplay can
-            # produce something more favorable. 
-            retry_seconds = seconds + 1
-            while retry_seconds < seconds + 20 and \
-                  retry_seconds < total_seconds and \
-                  (p1name == "???" or p2name == "???"):
-                timestamp2 = display_timestamp(retry_seconds, total_seconds)
-                filename_safe_timestamp2 = timestamp2.replace(':','-')
-                logging.debug(f"{timestamp2} Retrying due to OCR failure...")
-                image2 = get_frame_from_video(capture, retry_seconds, GAME_X, GAME_Y, GAME_SIZE)
-                p1name_img2, p2name_img2 = get_name_imgs(image2, GAME_SIZE)
-                if p1name == "???":
-                    p1name = ocr_with_fuzzy_match(p1name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p1")
-                if p2name == "???":
-                    p2name = ocr_with_fuzzy_match(p2name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p2")
-                retry_seconds += 1
+                # If any of the guesses are ???, just keep trying for a bit
+                # This can wait out some intro animations that cover up player names,
+                # and also moving around the stage background during gameplay can
+                # produce something more favorable. 
+                retry_seconds = seconds + 1
+                while retry_seconds < seconds + 20 and \
+                      retry_seconds < total_seconds and \
+                      (p1name == "???" or p2name == "???"):
+                    timestamp2 = display_timestamp(retry_seconds, total_seconds)
+                    filename_safe_timestamp2 = timestamp2.replace(':','-')
+                    logging.debug(f"{timestamp2} Retrying due to OCR failure...")
+                    image2 = get_frame_from_video(capture, retry_seconds, GAME_X, GAME_Y, GAME_SIZE)
+                    p1name_img2, p2name_img2 = get_name_imgs(image2, GAME_SIZE)
+                    if p1name == "???":
+                        p1name = ocr_with_fuzzy_match(p1name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p1")
+                    if p2name == "???":
+                        p2name = ocr_with_fuzzy_match(p2name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p2")
+                    retry_seconds += 1
+            else:
+                # Offline games won't have player tags
+                p1name = "???"
+                p2name = "???"
 
             # Save an image of this frame if something went wrong
             if args.debug and (p1name == "???" or p2name == "???"):
@@ -231,7 +237,7 @@ def main():
             # Assume no single game of SG is going to take less than 20 seconds
             seconds += 20
         else:
-            seconds += 2
+            seconds += 1
     print("Finished!")
     # Save the csv at the very end after all data is collected
     if not args.no_csv:

@@ -34,13 +34,17 @@ timestamps based off those corrections, use
 
 ### Install dependencies
 
-* Python 3.7+ and pip
-   * You will need some understanding of pip and the command line to get set up.
-* [Tesseract](https://github.com/tesseract-ocr/tessdoc)
-* [Tensorflow](https://www.tensorflow.org/install)
-   * Optional: setting up [CUDA](https://www.tensorflow.org/install/gpu) will 
-     make it run faster.
+You will need to know your way around a command line to 
+
+* install [Python](https://www.python.org/downloads/) 3.7+ 
+  (including the `pip` package manager)
 * `git clone` this repo and `pip3 install -r requirements.txt`
+* Install [Tesseract](https://github.com/tesseract-ocr/tessdoc) and make sure
+  its binary is available on your PATH variable.
+* Optional: set up [GPU support](https://www.tensorflow.org/install/gpu) to make
+  TensorFlow run faster. Make sure to follow the instructions carefully
+  (installing zlib, the CUDA toolkit, and CUDNN, as well as making all of them
+  available on PATH)
 
 ### Set up config.ini
 

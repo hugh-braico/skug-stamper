@@ -14,6 +14,8 @@ region_list = [
 # list of Skullgirls versions (Following the same naming as TWB)
 # https://github.com/Servan42/TWB_Parser/blob/master/List_of_CharactersCode_Regions_Versions.md
 version_list = [
+    'Black Dahlia Patch',
+    'Black Dahlia Alpha',
     'Umbrella Patch',
     # I didn't bother to mark any Umbrella Patch Beta vods as such
     'Annie Patch',
@@ -42,7 +44,7 @@ def validate_csv_fields(event, date, region, netplay, version, url):
         missing_fields.append("DATE")
     if not region:
         missing_fields.append("REGION")
-    if not netplay:
+    if netplay is None:
         missing_fields.append("NETPLAY")
     if not version:
         missing_fields.append("VERSION")
