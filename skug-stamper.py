@@ -82,10 +82,6 @@ def main():
     with open("config/usernames.json", "r") as f:
         usernames_dict = json.load(f)
 
-    # Open a dictionary that maps character names to their TWB shorthand
-    with open("config/characters.json", "r") as f:
-        characters_dict = json.load(f)
-
     # Load tensorflow models for identifying characters
     char1_model  = load_model('models/char1_model.h5')
     char23_model = load_model('models/char23_model.h5')
@@ -192,10 +188,10 @@ def main():
                     p1char3_img, p2char3_img = get_char_imgs(image2, 3, GAME_SIZE)
                     p1char1_guesses.append(identify_char1(p1char1_img, char1_model))
                     p2char1_guesses.append(identify_char1(p2char1_img, char1_model))
-                    p1char2_guesses.append(identify_char23(p1char2_img, char23_model))
-                    p2char2_guesses.append(identify_char23(p2char2_img, char23_model))
-                    p1char3_guesses.append(identify_char23(p1char3_img, char23_model))
-                    p2char3_guesses.append(identify_char23(p2char3_img, char23_model))
+                    p1char2_guesses.append(identify_char23(p1char2_img, char23_model, debug_name=f"{retry_seconds}/p1char2"))
+                    p2char2_guesses.append(identify_char23(p2char2_img, char23_model, debug_name=f"{retry_seconds}/p2char2"))
+                    p1char3_guesses.append(identify_char23(p1char3_img, char23_model, debug_name=f"{retry_seconds}/p1char3"))
+                    p2char3_guesses.append(identify_char23(p2char3_img, char23_model, debug_name=f"{retry_seconds}/p2char3"))
                     retry_seconds += 1
                     image2 = get_frame_from_video(capture, retry_seconds, GAME_X, GAME_Y, GAME_SIZE)
                 p1char1 = mode(p1char1_guesses)

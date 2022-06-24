@@ -3,9 +3,11 @@ from numpy import argmax
 from keras.models import load_model
 from glob import glob
 import cv2 as cv
+from pathlib import Path
+import logging
 
-char1_list  = ["AN","BB","BW","CE","DB","EL","FI","FU","MF","PC","PS","PW","RF","SQ","UM","VA"]
-char23_list = ["AN","BB","BW","CE","DB","EL","FI","FU","MF", "N","PC","PS","PW","RF","SQ","UM","VA"]
+char1_list  = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MF",    "PC","PS","PW","RF","SQ","UM","VA"]
+char23_list = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MF","N","PC","PS","PW","RF","SQ","UM","VA"]
 
 
 # Identify a point character by its big portrait
@@ -23,7 +25,12 @@ def identify_char1(image, model):
 
 
 # Identify a mid or anchor character by its mini portrait
-def identify_char23(image, model):
+def identify_char23(image, model, debug_name="guess"):
+    if logging.DEBUG >= logging.root.level:
+        debug_path = f"debug/identify_char23/{debug_name}"
+        Path(debug_path).mkdir(parents=True, exist_ok=True)
+        cv.imwrite(f"{debug_path}/1.jpg", image)
+
     height, width = 12, 48
     image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
     # Resize to the correct size so it can be accepted by the model
