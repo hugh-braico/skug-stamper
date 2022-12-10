@@ -186,4 +186,5 @@ good. Apologies to the original artist)
    * this allows putting the date in presets and not having to supply it 
      most of the time
 * Issue warnings if invalid teams come up (eg FI/FI/x, FI/N/x)
+* Issue warnings if duplicate player names come up (it happens!)
 * .exe packaging or GUI
