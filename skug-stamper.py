@@ -18,11 +18,12 @@ from keras.models import load_model
 from pyperclip import copy
 
 # helper scripts
-from utils.ocr import ocr_with_fuzzy_match
-from utils.cv2 import get_frame_from_video, is_round_start, get_char_imgs, get_name_imgs
+from utils.ocr   import ocr_with_fuzzy_match
+from utils.cv2   import get_frame_from_video, is_round_start, get_char_imgs, get_name_imgs
 from utils.timestamp import display_timestamp, timestamp_url
-from utils.csv import validate_csv_fields, twb_csv_header, twb_csv_row
-from utils.ml  import identify_char1, identify_char23
+from utils.csv   import validate_csv_fields, twb_csv_header, twb_csv_row
+from utils.ml    import identify_char1, identify_char23
+from utils.dates import infer_last_weekday
 
 
 def main():
@@ -57,6 +58,7 @@ def main():
     VERSION   = config.get(args.preset, 'VERSION', fallback="")
     REGION    = config.get(args.preset, 'REGION', fallback="")
     NETPLAY   = config.getint(args.preset, 'NETPLAY', fallback=1)
+    DAY       = config.get(args.preset, 'DAY', fallback=None)
     # Event can be set in either presets/args, but args take precedence
     if args.event:
         EVENT = args.event
@@ -74,9 +76,18 @@ def main():
     # From experimentation, this seems to work well as a brightness threshold
     PNAME_THRESHOLD = 190
 
-    # Issue some warnings for missing or invalid csv data
+    # Resolve date parameter
+    # -d parameter takes priority, fall back on inferring from DAY parameter
+    DATE = ''
+    if args.date:
+        DATE = args.date
+    elif DAY:
+        DATE = infer_last_weekday(DAY)
+        print(f"Automatically inferring {DATE} as most recent {DAY}")
+
+    # Issue warnings for missing or invalid csv data
     if not args.no_csv:
-        validate_csv_fields(EVENT, args.date, REGION, NETPLAY, VERSION, args.url)
+        validate_csv_fields(EVENT, DATE, REGION, NETPLAY, VERSION, args.url)
 
     # Open a dictionary of known usernames and aliases
     with open("config/usernames.json", "r") as f:
@@ -221,12 +232,29 @@ def main():
                 if not args.no_csv:
                     csv_list.append(
                         twb_csv_row(
-                            EVENT, args.date, REGION, NETPLAY, VERSION,
+                            EVENT, DATE, REGION, NETPLAY, VERSION,
                             p1name, p1char1, p1char2, p1char3,
                             p2name, p2char1, p2char2, p2char3,
                             timestamp_url(args.url, seconds)
                         )
                     )
+
+                # Look for invalid things and issue warnings in the output
+                if (p1char1 == 'N'
+                or p1char1 == p1char2 
+                or p1char1 == p1char3 
+                or (p1char2 != 'N' and p1char2 == p1char3)
+                or (p1char2 == 'N' and p1char3 != 'N')):
+                    print(f"########## WARNING! Invalid team {p1team}, please correct manually")
+                if (p2char1 == 'N'
+                or p2char1 == p2char2 
+                or p2char1 == p2char3 
+                or (p2char2 != 'N' and p2char2 == p2char3)
+                or (p2char2 == 'N' and p2char3 != 'N')):
+                    print(f"########## WARNING! Invalid team {p2team}, please correct manually")
+                if p1name == p2name:
+                    print(f"########## WARNING! Duplicate names detected, please correct manually")
+
             prev_p1name = p1name
             prev_p2name = p2name
 

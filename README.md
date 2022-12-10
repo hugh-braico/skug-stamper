@@ -67,6 +67,12 @@ GAME_SIZE = 1280
   tunawithbacon-style csv file. If you're not interested in that and just
   want the timestamps, you can safely ignore these.
 
+* DAY: If the preset's event always occurs on a certain day of the week, you
+  can use this optional field to automatically infer the date. Eg. by putting
+  Tuesday, it will use the most recent Tuesday including today. You can always
+  manually specify the date with `-d YYYY-MM-DD`, which takes precedence (more
+  on that later)
+
 The values are separated into "sections" or "presets" which you can select when
 running using `-p PRESET_NAME` (more on that later). If a preset doesn't have a
 value specified, it will fall back on the DEFAULT value.
@@ -180,11 +186,8 @@ good. Apologies to the original artist)
 
 ## TODO
 
+* Update level backgrounds mod link
 * Definable pre- and post-blurbs
-* pytest on a corpus of screenshots
-* Relative date input (yesterday, 2 days ago, last monday, this tuesday, etc)
-   * this allows putting the date in presets and not having to supply it 
-     most of the time
-* Issue warnings if invalid teams come up (eg FI/FI/x, FI/N/x)
-* Issue warnings if duplicate player names come up (it happens!)
+* Infer date from presets
 * .exe packaging or GUI
+    * probably will never happen unfortunately
