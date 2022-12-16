@@ -27,8 +27,9 @@ timestamps based off those corrections, use
 1. Absolutely will not pick up names from stream overlays etc without heavy
    source code modification. Only designed for the native Steam username 
    display.
-1. Unlikely to work well on low-quality video. For reference, SGOCE streams are 
-   typically 720p and around the 2500-3500kbps mark. 
+1. Unlikely to work well on low-quality video. Any lower than about 720p
+   2500kbps and you may experience a high error rate (1080p 6000kbps is best)
+
 
 ## Setup
 
