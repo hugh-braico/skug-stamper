@@ -158,7 +158,7 @@ The most common sources of ???'s is not having filled out your
 ### Optional: OCR-friendly level backgrounds mod
 
 If you have a copy of SkullMod and know how to use it, I have made a small
-[level backgrounds mod](https://cdn.discordapp.com/attachments/756684812873629717/943469191346941997/OCR_friendly_backgrounds.7z)
+[level backgrounds mod](https://filedn.eu/laufS0q7iBOJLSpMDyM6Uxk/OCR%20friendly%20backgrounds%20mod.7z)
 that makes it easier to OCR the names on some problematic stages without totally
 butchering how the stage looks. This mod isn't necessary, but it will reduce
 errors and increase speed (fewer errors means fewer retries). 
@@ -175,10 +175,6 @@ New Meridian: darken window on the right side
 
 ![New Meridian](diagrams/meridian.png)
 
-Boardwalk: remove the ferris wheel
-
-![Boardwalk](diagrams/boardwalk.png)
-
 Cathedral: remove the stained glass window (Yeah I know, this doesn't look very
 good. Apologies to the original artist)
 
@@ -186,8 +182,4 @@ good. Apologies to the original artist)
 
 ## TODO
 
-* Update level backgrounds mod link
-* Definable pre- and post-blurbs
-* Infer date from presets
-* .exe packaging or GUI
-    * probably will never happen unfortunately
+* .exe packaging / GUI
