@@ -98,12 +98,7 @@ def main():
     char23_model = load_model('models/char23_model.h5')
 
     # Open video file and get its total length
-    if not os.path.isfile(args.input):
-        sys.exit(f"ERROR: file {args.input} doesn't exist!")
-    capture = cv.VideoCapture(args.input)
-    fps = capture.get(cv.CAP_PROP_FPS)
-    frame_count = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
-    total_seconds = int(frame_count / fps)
+    (capture, total_seconds) = open_capture(args.input)
 
     # Set up a bunch of counting/tracking variables
     start_hours, start_minutes, start_seconds = 0, 0, 0
@@ -127,7 +122,7 @@ def main():
 
             logging.debug(f"{timestamp} Found round start")
 
-            cv.imwrite(f"""green_bars_samples/{filename_safe_timestamp}.jpg""", image)
+            # cv.imwrite(f"""green_bars_samples/{filename_safe_timestamp}.jpg""", image)
             
             # Try to guess the player names. Don't even try for offline games.
             if NETPLAY == 1:
@@ -136,39 +131,39 @@ def main():
                 p1name = ocr_with_fuzzy_match(p1name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p1")
                 p2name = ocr_with_fuzzy_match(p2name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p2")
 
-                # If any of the guesses are ???, just keep trying for a bit
+                # If any of the guesses are _, just keep trying for a bit
                 # This can wait out some intro animations that cover up player names,
                 # and also moving around the stage background during gameplay can
                 # produce something more favorable. 
                 retry_seconds = seconds + 1
                 while retry_seconds < seconds + 20 and \
                       retry_seconds < total_seconds and \
-                      (p1name == "???" or p2name == "???"):
+                      (p1name == "_" or p2name == "_"):
                     timestamp2 = display_timestamp(retry_seconds, total_seconds)
                     filename_safe_timestamp2 = timestamp2.replace(':','-')
                     logging.debug(f"{timestamp2} Retrying due to OCR failure...")
                     image2 = get_frame_from_video(capture, retry_seconds, GAME_X, GAME_Y, GAME_SIZE)
                     p1name_img2, p2name_img2 = get_name_imgs(image2, GAME_SIZE)
-                    if p1name == "???":
+                    if p1name == "_":
                         p1name = ocr_with_fuzzy_match(p1name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p1")
-                    if p2name == "???":
+                    if p2name == "_":
                         p2name = ocr_with_fuzzy_match(p2name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p2")
                     retry_seconds += 1
             else:
                 # Offline games won't have player tags
-                p1name = "???"
-                p2name = "???"
+                p1name = "_"
+                p2name = "_"
 
             # Save an image of this frame if something went wrong
-            if args.debug and (p1name == "???" or p2name == "???"):
+            if args.debug and (p1name == "_" or p2name == "_"):
                 debug_path = "debug/failure_screenshots"
                 Path(debug_path).mkdir(parents=True, exist_ok=True)
                 cv.imwrite(f"""{debug_path}/{filename_safe_timestamp}.jpg""", image)
 
             # Ignore this timestamp if it looks like it's just another game in
             # a set (ie. the previous game had the same two players)
-            # If any name is ???, always make a timestamp since we can't be sure
-            if p1name != "???" and p2name != "???" and \
+            # If any name is _, always make a timestamp since we can't be sure
+            if p1name != "_" and p2name != "_" and \
                ((p1name == prev_p1name and p2name == prev_p2name) or \
                 (p1name == prev_p2name and p2name == prev_p1name)):
                 print(f"{timestamp} (next game in set)")

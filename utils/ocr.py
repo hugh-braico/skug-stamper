@@ -139,7 +139,7 @@ def fuzzymatch(name, aliases_dict):
             return aliases_dict[choice[0]]
         else:
             logging.debug(f"Can't find good enough match for {name} (best option was {choice[0]})")
-            return "???"
+            return "_"
     else:
         logging.debug(f"Can't find any text in this image at all!")
-        return "???"
+        return "_"

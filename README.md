@@ -21,6 +21,8 @@ timestamps based off those corrections, use
    work very poorly if at all.
 1. Assumes a 16:9 aspect ratio. The *canvas* can be different as long as the
    game itself is 16:9 (through the use of black bars, stream overlays, etc)
+1. Does not currently support the alternate `-tourneyHUD` mode where usernames
+   are displayed above health bars.
 1. Only tested in English, you may need to install Tesseract language packs and
    do some light source code modification to the Tesseract calls to pick up 
    non-English characters.
@@ -152,8 +154,8 @@ you've supplied your GAME_X, GAME_Y, and GAME_SIZE properly. It's probably just
 looking at the wrong part of your video.
 
 The program isn't going to get it right 100% of the time, give it a look to
-make sure it looks right. Usernames that can't be identified are marked as ???.
-The most common sources of ???'s is not having filled out your
+make sure it looks right. Usernames that can't be identified are marked as \_.
+The most common sources of \_'s is not having filled out your
 `config/usernames.json` correctly. 
 
 ### Optional: OCR-friendly level backgrounds mod
@@ -183,4 +185,9 @@ good. Apologies to the original artist)
 
 ## TODO
 
-* .exe packaging / GUI
+* Dynamically handle unknown usernames
+* Disable all form input while the thread is working
+* "Cancel" button that kills the thread and enables form input again
+* .exe packaging / GUI - problems with tensorflow and/or tesseract.
+* Refactor to share functionality between gui and cmdline versions
+* Support for other username locations like `-tourneyHUD` and stream overlay

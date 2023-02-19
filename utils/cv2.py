@@ -1,11 +1,24 @@
 import cv2 as cv
 import numpy as np
 import sys
+import os
 import logging
 from pathlib import Path
+from PyQt6.QtGui import QPixmap, QImage
+
+# Open a video file, returning a capture object and some other data
+def open_capture(filename: str):
+    if not os.path.isfile(filename):
+        sys.exit(f"ERROR: file {filename} doesn't exist!")
+    capture = cv.VideoCapture(filename)
+    fps = capture.get(cv.CAP_PROP_FPS)
+    frame_count = int(capture.get(cv.CAP_PROP_FRAME_COUNT))
+    total_seconds = int(frame_count / fps)
+    return (capture, total_seconds)
+
 
 # Read a frame at a specific time from a video
-def get_frame_from_video(capture, seconds, GAME_X, GAME_Y, GAME_SIZE):
+def get_frame_from_video(capture, seconds, GAME_X, GAME_Y, GAME_SIZE, crop=True):
     capture.set(cv.CAP_PROP_POS_MSEC,(seconds*1000))   
     success, image = capture.read()
     if not success:
@@ -14,10 +27,21 @@ def get_frame_from_video(capture, seconds, GAME_X, GAME_Y, GAME_SIZE):
     # This means passing around a smaller array, and also all calculations
     # from this point forward can be independent of GAME_X and GAME_Y
     y1 = GAME_Y
-    y2 = GAME_Y + int(GAME_SIZE*0.15)
+    if crop:
+        y2 = GAME_Y + int(GAME_SIZE*0.15)
+    else:
+        y2 = GAME_Y + int(GAME_SIZE*0.562)
     x1 = GAME_X
     x2 = GAME_X + GAME_SIZE - 1
     return image[y1:y2, x1:x2]
+
+
+def cv2_to_qpixmap(image):
+    height, width, channel = image.shape
+    bytesPerLine = 3 * width
+    image2 = np.require(image, np.uint8, 'C')
+    qimg = QImage(image2, width, height, bytesPerLine, QImage.Format.Format_BGR888)
+    return QPixmap(qimg)
 
 
 def avg_colour_of_area(image, y1, y2, x1, x2):

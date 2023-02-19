@@ -6,10 +6,12 @@ name_guesses/
 videos/
 guesses/
 debug/
+dist/
+build/
+*.spec
 *.mp4
 *.jpg
 *.webm
 *.part
-*.ytdl
 *.csv
 test*
