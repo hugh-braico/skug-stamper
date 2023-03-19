@@ -121,25 +121,25 @@ def remove_coloured_pixels(image):
 
 # Fuzzy matches a name against a dictionary of known aliases, returns real name
 def fuzzymatch(name, aliases_dict):
-    minimum_confidence = 65
+    minimum_confidence = 70
     if name:
         choice = process.extractOne(name, aliases_dict.keys())
         if choice[1] >= minimum_confidence:
             # Debug logging
             if choice[1] < 100:
                 if choice[0] == aliases_dict[choice[0]]:
-                    logging.debug(f"{name} -> {choice[0]}")
+                    logging.debug(f"\"{name}\" -> \"{choice[0]}\"")
                 else:
-                    logging.debug(f"{name} -> {choice[0]} -> {aliases_dict[choice[0]]}")
+                    logging.debug(f"\"{name}\" -> \"{choice[0]}\" alias \"{aliases_dict[choice[0]]}\"")
             else:
                 if choice[0] == aliases_dict[choice[0]]:
-                    logging.debug(f"Exact match {choice[0]}")
+                    logging.debug(f"\"{choice[0]}\"              (exact match)")
                 else:
-                    logging.debug(f"Exact match {choice[0]} -> {aliases_dict[choice[0]]}")
+                    logging.debug(f"\"{choice[0]}\" alias \"{aliases_dict[choice[0]]}\"")
             return aliases_dict[choice[0]]
         else:
-            logging.debug(f"Can't find good enough match for {name} (best option was {choice[0]})")
+            logging.debug(f"\"{name}\" -> _         (best guess was \"{choice[0]}\")")
             return "_"
     else:
-        logging.debug(f"Can't find any text in this image at all!")
+        logging.debug(f"No text detected!")
         return "_"

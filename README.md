@@ -185,9 +185,9 @@ good. Apologies to the original artist)
 
 ## TODO
 
-* Dynamically handle unknown usernames
-* Disable all form input while the thread is working
-* "Cancel" button that kills the thread and enables form input again
 * .exe packaging / GUI - problems with tensorflow and/or tesseract.
+    * Cope solution may be to package with python and a bash script to run it
+* Support for `-tourneyHUD`
 * Refactor to share functionality between gui and cmdline versions
-* Support for other username locations like `-tourneyHUD` and stream overlay
+* Performance profiling
+* "Interactive mode" for offlines: prompt for usernames / "Same set" button

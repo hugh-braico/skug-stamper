@@ -51,7 +51,7 @@ def avg_colour_of_area(image, y1, y2, x1, x2):
 
 # Determines whether a frame is near the start of a round by looking for the
 # presence of a green health bar on both P1 and P2's point characters.
-def is_round_start(image, GAME_SIZE):
+def is_round_start(image, GAME_SIZE, debug_name="guess"):
 
     # Take two slices from each health bar, take the average colour, and then
     # compare to an "expected" green value. 
@@ -65,32 +65,57 @@ def is_round_start(image, GAME_SIZE):
     correct_inner_green = np.array([ 69.7, 126.3,  56.6])
     threshold = 10
 
+    # Set up debug logging
+    if logging.DEBUG >= logging.root.level:
+        debug_path = f"debug/green_bars/{debug_name}"
+        Path(debug_path).mkdir(parents=True, exist_ok=True)
+
     # P1 outer slice
     p1x1_outer = int(GAME_SIZE*0.146)
     p1x2_outer = int(GAME_SIZE*0.225)
     p1_outer_avg = avg_colour_of_area(image, y1, y2, p1x1_outer, p1x2_outer)
-    if np.linalg.norm(p1_outer_avg - correct_outer_green) > threshold:
+    p1_outer_diff = np.linalg.norm(p1_outer_avg - correct_outer_green)
+    if p1_outer_diff > threshold:
+        if logging.DEBUG >= logging.root.level:
+            logging.debug(f"is_round_start: ({debug_name}) p1_outer_diff {p1_outer_diff} > threshold {threshold}")
+            cv.imwrite(f"{debug_path}/p1_outer_diff_{p1_outer_diff}.jpg", image[y1:y2, p1x1_outer:p1x2_outer])
+            cv.imwrite(f"{debug_path}/full_img.jpg", image)
         return False
 
     # P2 outer slice
     p2x1_outer = GAME_SIZE - p1x2_outer
     p2x2_outer = GAME_SIZE - p1x1_outer
     p2_outer_avg = avg_colour_of_area(image, y1, y2, p2x1_outer, p2x2_outer)
-    if np.linalg.norm(p2_outer_avg - correct_outer_green) > threshold:
+    p2_outer_diff = np.linalg.norm(p2_outer_avg - correct_outer_green)
+    if p2_outer_diff > threshold:
+        if logging.DEBUG >= logging.root.level:
+            logging.debug(f"is_round_start: ({debug_name}) p2_outer_diff {p2_outer_diff} > threshold {threshold}")
+            cv.imwrite(f"{debug_path}/p2_outer_diff_{p2_outer_diff}.jpg", image[y1:y2, p2x1_outer:p2x2_outer])
+            cv.imwrite(f"{debug_path}/full_img.jpg", image)
         return False
 
     # P1 inner slice
     p1x1_inner = int(GAME_SIZE*0.330)
     p1x2_inner = int(GAME_SIZE*0.409)
     p1_inner_avg = avg_colour_of_area(image, y1, y2, p1x1_inner, p1x2_inner)
-    if np.linalg.norm(p1_inner_avg - correct_inner_green) > threshold:
+    p1_inner_diff = np.linalg.norm(p1_inner_avg - correct_inner_green)
+    if p1_inner_diff > threshold:
+        if logging.DEBUG >= logging.root.level:
+            logging.debug(f"is_round_start: ({debug_name}) p1_inner_diff {p1_inner_diff} > threshold {threshold}")
+            cv.imwrite(f"{debug_path}/p1_inner_diff_{p1_inner_diff}.jpg", image[y1:y2, p1x1_inner:p1x2_inner])
+            cv.imwrite(f"{debug_path}/full_img.jpg", image)
         return False
 
     # P2 inner slice
     p2x1_inner = GAME_SIZE - p1x2_inner
     p2x2_inner = GAME_SIZE - p1x1_inner
     p2_inner_avg = avg_colour_of_area(image, y1, y2, p2x1_inner, p2x2_inner)
-    if np.linalg.norm(p2_inner_avg - correct_inner_green) > threshold:
+    p2_inner_diff = np.linalg.norm(p2_inner_avg - correct_inner_green)
+    if p2_inner_diff > threshold:
+        if logging.DEBUG >= logging.root.level:
+            logging.debug(f"is_round_start: ({debug_name}) p2_inner_diff {p2_inner_diff} > threshold {threshold}")
+            cv.imwrite(f"{debug_path}/p2_inner_diff_{p2_inner_diff}.jpg", image[y1:y2, p2x1_inner:p2x2_inner])
+            cv.imwrite(f"{debug_path}/full_img.jpg", image)
         return False
 
     return True
@@ -105,8 +130,11 @@ def get_char_imgs(image, char_num, GAME_SIZE):
         p1x1 = int(GAME_SIZE*0.023438)
         p1x2 = int(GAME_SIZE*0.117188)
     elif char_num == 2:
-        y1   = int(GAME_SIZE*0.054688)
-        y2   = int(GAME_SIZE*0.064063)
+        y1   = int(GAME_SIZE*0.054213)
+        y2   = int(GAME_SIZE*0.063588)
+        # Older params that were a bit more imprecise I think
+        # y1   = int(GAME_SIZE*0.054688)
+        # y2   = int(GAME_SIZE*0.064063)
         p1x1 = int(GAME_SIZE*0.134375)
         p1x2 = int(GAME_SIZE*0.171875)
     else:

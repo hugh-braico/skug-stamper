@@ -39,16 +39,20 @@ from utils.ml    import identify_char1, identify_char23
 
 # The worker prints to the output console and display frames as it works
 class WorkerSignals(QObject):
+    # startWork    = pyqtSignal()
     printLine    = pyqtSignal(str)
     showFrame    = pyqtSignal(object)
     updateSlider = pyqtSignal(int)
+    finishWork   = pyqtSignal()
 
 
-class Worker(QRunnable):
+# class Worker(QRunnable):
+class Worker(QObject):
     def __init__(self, *args, **kwargs):
         super(Worker, self).__init__()
 
         self.signals = WorkerSignals()
+        self.stop    = False
 
         # Unpack arguments
         self.GAME_X        = kwargs['GAME_X']
@@ -65,8 +69,12 @@ class Worker(QRunnable):
         self.VERSION       = kwargs['VERSION']
         self.URL           = kwargs['URL']
         self.capture       = kwargs['capture']
+        self.start_seconds = kwargs['start_seconds']
         self.total_seconds = kwargs['total_seconds']
         self.outfile_name  = kwargs['outfile_name']
+
+    def signal_to_stop(self):
+        self.stop = True
 
     @pyqtSlot()
     def run(self):
@@ -81,61 +89,83 @@ class Worker(QRunnable):
         # From experimentation, this seems to work well as a brightness threshold
         PNAME_THRESHOLD = 190
 
-        # Set up a bunch of counting/tracking variables
-        start_hours, start_minutes, start_seconds = 0, 0, 0
-        seconds = start_hours*3600 + start_minutes*60 + start_seconds
+        # Manual start time for debugging
+        # start_hours, start_minutes, start_seconds = 0, 0, 0
+        # seconds = start_hours*3600 + start_minutes*60 + start_seconds
+        # Start at the point on the slider selected by the user
+        seconds = self.start_seconds
         prev_p1name = None
         prev_p2name = None
         set_length  = 1
         csv_list = [twb_csv_header()]
         timestamp_list = []
 
+        # Set logging level
+        logging_format = '%(levelname)s: %(message)s'
+        # logging.basicConfig(level=logging.DEBUG, format=logging_format)
+        logging.basicConfig(level=logging.INFO, format=logging_format)
+
         # Showtime. Try to find round starts and guess who's playing and what team
         self.signals.printLine.emit("\nProcessing video...")
         while seconds < self.total_seconds:
+            timestamp = display_timestamp(seconds, self.total_seconds)
+            filename_safe_timestamp = timestamp.replace(':','-')
+
+            # Monitor regularly for stop signal
+            if self.stop:
+                break
+
             image = get_frame_from_video(self.capture, seconds, self.GAME_X, self.GAME_Y, self.GAME_SIZE, crop=False)
+            self.signals.showFrame.emit(np.copy(image))
             self.signals.updateSlider.emit(seconds)
 
-            if is_round_start(image, self.GAME_SIZE):
+            if is_round_start(image, self.GAME_SIZE, filename_safe_timestamp):
 
-                self.signals.showFrame.emit(np.copy(image))
-
-                timestamp = display_timestamp(seconds, self.total_seconds)
-                filename_safe_timestamp = timestamp.replace(':','-')
-
-                # logging.debug(f"{timestamp} Found round start")
+                # self.signals.showFrame.emit(np.copy(image))
 
                 # cv.imwrite(f"""green_bars_samples/{filename_safe_timestamp}.jpg""", image)
                 
                 # Try to guess the player names. Don't even try for offline games.
+                # TODO with stream overlay support maybe this could be changed
                 if self.NETPLAY == 1:
-                    # Initial guess
-                    p1name_img, p2name_img = get_name_imgs(image, self.GAME_SIZE)
-                    p1name = ocr_with_fuzzy_match(p1name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p1")
-                    p2name = ocr_with_fuzzy_match(p2name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp}_p2")
-
-                    # If any of the guesses are _, just keep trying for a bit
-                    # This can wait out some intro animations that cover up player names,
-                    # and also moving around the stage background during gameplay can
-                    # produce something more favorable. 
-                    retry_seconds = seconds + 1
+                    # Take a series of guesses
+                    # Things can block and obscure the names for a LONG time,
+                    # so lots of guesses (~20) are necessary
+                    p1name_guesses = []
+                    p2name_guesses = []
+                    retry_seconds = seconds
                     while retry_seconds < seconds + 20 and \
-                          retry_seconds < self.total_seconds and \
-                          (p1name == "_" or p2name == "_"):
-                        timestamp2 = display_timestamp(retry_seconds, self.total_seconds)
-                        filename_safe_timestamp2 = timestamp2.replace(':','-')
-                        # logging.debug(f"{timestamp2} Retrying due to OCR failure...")
-                        image2 = get_frame_from_video(self.capture, retry_seconds, self.GAME_X, self.GAME_Y, self.GAME_SIZE)
-                        p1name_img2, p2name_img2 = get_name_imgs(image2, self.GAME_SIZE)
-                        if p1name == "_":
-                            p1name = ocr_with_fuzzy_match(p1name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p1")
-                        if p2name == "_":
-                            p2name = ocr_with_fuzzy_match(p2name_img2, usernames_dict, PNAME_THRESHOLD, debug_name=f"{filename_safe_timestamp2}_p2")
+                          retry_seconds < self.total_seconds:
+                        # Monitor regularly for stop signal
+                        if self.stop:
+                            break
+                        guess_timestamp = display_timestamp(retry_seconds, self.total_seconds).replace(':','-')
+                        image = get_frame_from_video(self.capture, retry_seconds, self.GAME_X, self.GAME_Y, self.GAME_SIZE)
+                        p1name_img, p2name_img = get_name_imgs(image, self.GAME_SIZE)
+                        p1name_guess = ocr_with_fuzzy_match(p1name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{guess_timestamp}_p1name")
+                        if p1name_guess != "_":
+                            p1name_guesses.append(p1name_guess)
+                        p2name_guess = ocr_with_fuzzy_match(p2name_img, usernames_dict, PNAME_THRESHOLD, debug_name=f"{guess_timestamp}_p2name")
+                        if p2name_guess != "_":
+                            p2name_guesses.append(p2name_guess)
                         retry_seconds += 1
+                    # Take the most common guess from each set
+                    if p1name_guesses:
+                        p1name = mode(p1name_guesses)
+                    else:
+                        p1name = "_"
+                    if p2name_guesses:
+                        p2name = mode(p2name_guesses)
+                    else:
+                        p2name = "_"
                 else:
                     # Offline games won't have player tags
                     p1name = "_"
                     p2name = "_"
+
+                # Monitor regularly for stop signal
+                if self.stop:
+                    break
 
                 # Save an image of this frame if something went wrong
                 # if args.debug and (p1name == "_" or p2name == "_"):
@@ -172,17 +202,23 @@ class Worker(QRunnable):
                     p2char3_guesses = []
                     retry_seconds = seconds
                     image2 = image
-                    while retry_seconds < seconds + 5 and \
+                    # this is a bit dangerous because the teams could change
+                    # immediately after the match starts but oh well
+                    while retry_seconds < seconds + 10 and \
                           retry_seconds < self.total_seconds:
+                        # Monitor regularly for stop signal
+                        if self.stop:
+                            break
+                        guess_timestamp = display_timestamp(retry_seconds, self.total_seconds).replace(':','-')
                         p1char1_img, p2char1_img = get_char_imgs(image2, 1, self.GAME_SIZE)
                         p1char2_img, p2char2_img = get_char_imgs(image2, 2, self.GAME_SIZE)
                         p1char3_img, p2char3_img = get_char_imgs(image2, 3, self.GAME_SIZE)
-                        p1char1_guesses.append(identify_char1(p1char1_img, char1_model))
-                        p2char1_guesses.append(identify_char1(p2char1_img, char1_model))
-                        p1char2_guesses.append(identify_char23(p1char2_img, char23_model, debug_name=f"{retry_seconds}/p1char2"))
-                        p2char2_guesses.append(identify_char23(p2char2_img, char23_model, debug_name=f"{retry_seconds}/p2char2"))
-                        p1char3_guesses.append(identify_char23(p1char3_img, char23_model, debug_name=f"{retry_seconds}/p1char3"))
-                        p2char3_guesses.append(identify_char23(p2char3_img, char23_model, debug_name=f"{retry_seconds}/p2char3"))
+                        p1char1_guesses.append(identify_char1(p1char1_img,  char1_model,  debug_name=f"{guess_timestamp}/p1char1"))
+                        p2char1_guesses.append(identify_char1(p2char1_img,  char1_model,  debug_name=f"{guess_timestamp}/p2char1"))
+                        p1char2_guesses.append(identify_char23(p1char2_img, char23_model, debug_name=f"{guess_timestamp}/p1char2"))
+                        p2char2_guesses.append(identify_char23(p2char2_img, char23_model, debug_name=f"{guess_timestamp}/p2char2"))
+                        p1char3_guesses.append(identify_char23(p1char3_img, char23_model, debug_name=f"{guess_timestamp}/p1char3"))
+                        p2char3_guesses.append(identify_char23(p2char3_img, char23_model, debug_name=f"{guess_timestamp}/p2char3"))
                         retry_seconds += 1
                         image2 = get_frame_from_video(self.capture, retry_seconds, self.GAME_X, self.GAME_Y, self.GAME_SIZE)
                     p1char1 = mode(p1char1_guesses)
@@ -191,6 +227,10 @@ class Worker(QRunnable):
                     p2char2 = mode(p2char2_guesses)
                     p1char3 = mode(p1char3_guesses)
                     p2char3 = mode(p2char3_guesses)
+
+                    # Monitor regularly for stop signal
+                    if self.stop:
+                        break
 
                     # Construct a team display string for each player
                     p1team = p1char1
@@ -242,7 +282,13 @@ class Worker(QRunnable):
                 seconds += 20
             else:
                 seconds += 1
-        self.signals.printLine.emit("Finished!")
+
+        # Monitor regularly for stop signal
+        if self.stop:
+            self.signals.printLine.emit("Processing halted early!")
+        else:
+            self.signals.printLine.emit("Finished!")
+
         # Save the csv at the very end after all data is collected
         if self.MAKE_CSV:
             with open(self.outfile_name, "w") as f:
@@ -250,4 +296,5 @@ class Worker(QRunnable):
             self.signals.printLine.emit(f"CSV data written to {self.outfile_name}.")
         timestamp_data = "\n".join(timestamp_list)
         self.signals.printLine.emit("\nSummary:\n" + timestamp_data)
+        self.signals.finishWork.emit()
         copy(timestamp_data)

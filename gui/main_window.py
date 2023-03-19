@@ -4,7 +4,8 @@ import configparser
 import os
 
 # qt stuff
-from PyQt6.QtCore import QSize, QDate, Qt, QThreadPool
+# from PyQt6.QtCore import QSize, QDate, Qt, QThreadPool
+from PyQt6.QtCore import QSize, QDate, Qt, QThread
 from PyQt6 import QtGui
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtWidgets import (
@@ -17,8 +18,10 @@ from PyQt6.QtWidgets import (
     QFrame, QSplitter, QVBoxLayout, QHBoxLayout
 )
 
-from utils.cv2   import *
-from utils.dates import infer_last_weekday, get_weekday_name
+from utils.cv2       import *
+from utils.dates     import infer_last_weekday, get_weekday_name
+from utils.timestamp import display_timestamp
+from utils.csv       import version_list
 
 # gui-specific functions
 from gui.dialogs import NewPresetDialog
@@ -34,11 +37,10 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QtGui.QIcon('assets/bigband.png'))
 
         # One background thread for processing a video
-        self.threadpool = QThreadPool()
-        self.threadpool.setMaxThreadCount(1)
+        self.thread = None
 
         #######################################################################
-        ### Options form
+        ### Left pane layouting (Options form)
 
         # Preset selection
         self.config = configparser.ConfigParser()
@@ -151,23 +153,7 @@ class MainWindow(QMainWindow):
         self.version_label = QLabel("Game version")
         self.version_label.setEnabled(False)
         self.version_combobox = QComboBox()
-        self.version_list = [
-            'Black Dahlia Alpha',
-            'Umbrella Patch',
-            'Annie Patch',
-            'Annie Patch Beta',
-            '2E+ Final',
-            '2E+ (old UD)',
-            '2E',
-            'Beowulf Patch',
-            'Eliza Patch',
-            'Fukua Patch',
-            'Big Band Patch',
-            'Encore',
-            'MDE',
-            'SDE'
-        ]
-        self.version_combobox.addItems(self.version_list)
+        self.version_combobox.addItems(version_list)
         self.version_combobox.setEnabled(False)
 
         # URL
@@ -179,95 +165,108 @@ class MainWindow(QMainWindow):
 
         # Start button
         self.start_button = QPushButton("Create timestamps")
-        start_button_font = self.start_button.font()
-        start_button_font.setBold(True)
-        self.start_button.setFont(start_button_font)
+        self.start_button_font = self.start_button.font()
+        self.start_button_font.setBold(True)
+        self.start_button.setFont(self.start_button_font)
         self.start_button.setEnabled(False)
         self.start_button.clicked.connect(self.process_video)
-
-        # Cancel button
-        self.cancel_button = QPushButton("Cancel")
 
         # Pre-populate fields from preset
         self.populate_form_from_preset()
 
-        form_layout = QVBoxLayout()
+        self.form_layout = QVBoxLayout()
+        self.form_layout.setContentsMargins(0,0,0,0)
 
         # Preset stuff
-        form_layout.addWidget(self.preset_label)
-        form_layout.addWidget(self.preset_combobox)
-        form_layout.addWidget(self.preset_save_button)
-        form_layout.addWidget(self.preset_new_button)
-        form_layout.addWidget(self.preset_remove_button)
-        form_layout.addWidget(self.divider1)
-
+        self.form_layout.addWidget(self.preset_label)
+        self.form_layout.addWidget(self.preset_combobox)
+        self.form_layout.addWidget(self.preset_save_button)
+        self.form_layout.addWidget(self.preset_new_button)
+        self.form_layout.addWidget(self.preset_remove_button)
+        self.form_layout.addWidget(self.divider1)
         # Mandatory stuff
-        form_layout.addWidget(self.infile_label)
-        form_layout.addWidget(self.infile_open_button)
-        form_layout.addWidget(self.game_x_label)
-        form_layout.addWidget(self.game_x_input)
-        form_layout.addWidget(self.game_y_label)
-        form_layout.addWidget(self.game_y_input)
-        form_layout.addWidget(self.game_size_label)
-        form_layout.addWidget(self.game_size_input)
-        form_layout.addWidget(self.divider2)
-
+        self.form_layout.addWidget(self.infile_label)
+        self.form_layout.addWidget(self.infile_open_button)
+        self.form_layout.addWidget(self.game_x_label)
+        self.form_layout.addWidget(self.game_x_input)
+        self.form_layout.addWidget(self.game_y_label)
+        self.form_layout.addWidget(self.game_y_input)
+        self.form_layout.addWidget(self.game_size_label)
+        self.form_layout.addWidget(self.game_size_input)
+        self.form_layout.addWidget(self.divider2)
         # CSV specific options
-        form_layout.addWidget(self.outfile_checkbox)
-        form_layout.addWidget(self.outfile_label)
-        form_layout.addWidget(self.outfile_open_button)
-        form_layout.addWidget(self.event_label)
-        form_layout.addWidget(self.event_input)
-        form_layout.addWidget(self.date_label)
-        form_layout.addWidget(self.date_picker)
-        form_layout.addWidget(self.region_label)
-        form_layout.addWidget(self.region_combobox)
-        form_layout.addWidget(self.netplay_checkbox)
-        form_layout.addWidget(self.version_label)
-        form_layout.addWidget(self.version_combobox)
-        form_layout.addWidget(self.url_label)
-        form_layout.addWidget(self.url_input)
+        self.form_layout.addWidget(self.outfile_checkbox)
+        self.form_layout.addWidget(self.outfile_label)
+        self.form_layout.addWidget(self.outfile_open_button)
+        self.form_layout.addWidget(self.event_label)
+        self.form_layout.addWidget(self.event_input)
+        self.form_layout.addWidget(self.date_label)
+        self.form_layout.addWidget(self.date_picker)
+        self.form_layout.addWidget(self.region_label)
+        self.form_layout.addWidget(self.region_combobox)
+        self.form_layout.addWidget(self.netplay_checkbox)
+        self.form_layout.addWidget(self.version_label)
+        self.form_layout.addWidget(self.version_combobox)
+        self.form_layout.addWidget(self.url_label)
+        self.form_layout.addWidget(self.url_input)
+        # And lastly, the start button
+        self.form_layout.addWidget(self.start_button)
 
-        form_layout.addWidget(self.start_button)
-        form_layout.addWidget(self.cancel_button)
-
-        # Widget that encapsulates all the form controls
+        # Widget that encapsulates all the form controls except cancel button
         self.form_container = QWidget()
-        self.form_container.setFixedSize(QSize(275,755))
-        self.form_container.setLayout(form_layout)
+        self.form_container.setFixedSize(QSize(275,720))
+        self.form_container.setLayout(self.form_layout)
+
+        # Cancel button gets its own layout because it's a special boy
+        # (want to be able to disable all the form at once, except this button)
+        self.cancel_button = QPushButton("Cancel / Finish Early")
+        self.cancel_button.setEnabled(False)
+        self.cancel_button.clicked.connect(self.cancel_worker)
+        self.left_pane_layout = QVBoxLayout()
+        self.left_pane_layout.setContentsMargins(0,0,0,0)
+        self.left_pane_layout.addWidget(self.form_container)
+        self.left_pane_layout.addWidget(self.cancel_button)
+        self.left_pane_container = QWidget()
+        self.left_pane_container.setLayout(self.left_pane_layout)
 
         #######################################################################
-        ### Centre pane
+        ### Centre pane layouting (Video preview and progress bar)
 
         # Widget that displays frames from the video
-        display_layout = QVBoxLayout()
         self.display_widget = QLabel()
         self.display_widget.setFrameStyle(QFrame.Shape.StyledPanel)
         self.display_widget.setScaledContents(True)
         self.display_widget.setFixedSize(QSize(960,540))
-        display_layout.addWidget(self.display_widget)
-        display_layout.addWidget(self.display_slider)
-        self.display_container = QWidget()
-        self.display_container.setLayout(display_layout)
+        self.display_label = QLabel("0:00:00")
+        self.display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.display_label.setFixedSize(QSize(960,50))
+        self.centre_pane_layout = QVBoxLayout()
+        self.centre_pane_layout.setSpacing(5)
+        self.centre_pane_layout.addWidget(self.display_widget)
+        self.centre_pane_layout.addWidget(self.display_slider)
+        self.centre_pane_layout.addWidget(self.display_label)
+        self.centre_pane_container = QWidget()
+        self.centre_pane_container.setLayout(self.centre_pane_layout)
 
         #######################################################################
-        ### Right pane
+        ### Right pane layouting (Output text console)
 
         # Widget that displays console output, timestamp results
-        self.output_text = QTextEdit()
-        self.output_text.setReadOnly(True)
-        self.output_text.setFixedSize(QSize(400,755))
+        self.right_pane_text = QTextEdit()
+        self.right_pane_text.setReadOnly(True)
+        self.right_pane_text.setFixedSize(QSize(400,755))
 
         #######################################################################
-        ### Right pane
+        ### Main layout (Three side-by-side panes)
 
-        # Main layout has three side-by-side panes
-        main_layout = QSplitter()
-        main_layout.addWidget(self.form_container)
-        main_layout.addWidget(self.display_container)
-        main_layout.addWidget(self.output_text)
+        self.main_layout = QHBoxLayout()
+        self.main_layout.addWidget(self.left_pane_container)
+        self.main_layout.addWidget(self.centre_pane_container)
+        self.main_layout.addWidget(self.right_pane_text)
+        self.main_container = QWidget()
+        self.main_container.setLayout(self.main_layout)
 
-        self.setCentralWidget(main_layout)
+        self.setCentralWidget(self.main_container)
 
     def populate_form_from_preset(self):
         current_preset_name = self.preset_combobox.currentText()
@@ -295,7 +294,7 @@ class MainWindow(QMainWindow):
             self.netplay_checkbox.setChecked(netplay == "1")
 
         version = current_preset.get("VERSION", "")
-        if version in self.version_list:
+        if version in version_list:
             self.version_combobox.setCurrentText(version)
 
     def preset_new_button_dialog(self):
@@ -345,6 +344,10 @@ class MainWindow(QMainWindow):
             self.write_presets_to_file()
             self.preset_combobox.removeItem(self.preset_combobox.currentIndex())
 
+    def set_slider(self, seconds):
+        self.display_slider.setSliderPosition(seconds)
+        self.display_label.setText(display_timestamp(seconds, self.total_seconds))
+
     def choose_infile(self):
         (filename, filter_info) = QFileDialog.getOpenFileName(
             self, 
@@ -356,8 +359,12 @@ class MainWindow(QMainWindow):
             self.infile_label.setText(os.path.basename(filename))
             self.check_start_button()
             (self.capture, self.total_seconds) = open_capture(filename)
+            capture_width = int(self.capture.get(cv.CAP_PROP_FRAME_WIDTH))
+            self.game_size_input.setMaximum(capture_width)
+            if self.game_size_input.value() > capture_width:
+                self.game_size_input.setValue(capture_width)
             self.display_slider.setEnabled(True)
-            self.display_slider.setSliderPosition(0)
+            self.set_slider(0)
             self.display_slider.setRange(0, self.total_seconds)
             self.preview_video_by_slider()
 
@@ -373,6 +380,7 @@ class MainWindow(QMainWindow):
                 crop=False
             )
             self.display_widget.setPixmap(cv2_to_qpixmap(frame))
+            self.display_label.setText(display_timestamp(seconds, self.total_seconds))
 
     def preview_video_by_slider(self):
         self.set_display_frame(self.display_slider.value())
@@ -427,13 +435,13 @@ class MainWindow(QMainWindow):
                 self.start_button.setEnabled(False)
 
     def print_output_line(self, line): 
-        self.output_text.append(line)
+        self.right_pane_text.append(line)
 
     def display_frame_from_image(self, image):
         self.display_widget.setPixmap(cv2_to_qpixmap(image))
 
     def process_video(self):
-        worker = Worker(
+        self.worker = Worker(
             GAME_X        = self.game_x_input.value(),
             GAME_Y        = self.game_y_input.value(),
             GAME_SIZE     = self.game_size_input.value(),
@@ -445,13 +453,31 @@ class MainWindow(QMainWindow):
             VERSION       = self.version_combobox.currentText(),
             URL           = self.url_input.text(),
             capture       = self.capture,
+            start_seconds = self.display_slider.value(),
             total_seconds = self.total_seconds,
             outfile_name  = self.outfile_name
         )
-        worker.signals.printLine.connect(self.print_output_line)
-        worker.signals.showFrame.connect(self.display_frame_from_image)
-        worker.signals.updateSlider.connect(self.display_slider.setSliderPosition)
-        # TODO
+        self.worker.signals.printLine.connect(self.print_output_line)
+        self.worker.signals.showFrame.connect(self.display_frame_from_image)
+        self.worker.signals.updateSlider.connect(self.set_slider)
+        self.worker.signals.finishWork.connect(self.worker_finished)
         self.display_slider.setEnabled(False)
         self.form_container.setEnabled(False)
-        self.threadpool.start(worker)
+        self.cancel_button.setEnabled(True)
+        # Start worker in another thread so it doesn't block gui execution
+        self.thread = QThread()
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.thread.start()
+
+    # Set a flag to signal to the worker to stop processing
+    def cancel_worker(self):
+        self.cancel_button.setEnabled(False)
+        self.worker.signal_to_stop()
+
+    # Clean-up actions after the worker has finished doing its thing
+    def worker_finished(self):
+        self.thread.quit()
+        self.form_container.setEnabled(True)
+        self.set_slider(0)
+        self.display_slider.setEnabled(True)
