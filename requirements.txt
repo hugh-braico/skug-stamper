@@ -2,7 +2,7 @@ pytesseract
 numpy
 Pillow
 opencv-python
-fuzzywuzzy
+thefuzz
 python-Levenshtein
 tensorflow
 keras

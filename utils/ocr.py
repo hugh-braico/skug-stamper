@@ -1,5 +1,5 @@
 import pytesseract
-from fuzzywuzzy import process
+from thefuzz import process, fuzz
 import cv2 as cv
 import numpy as np
 import logging
@@ -123,6 +123,8 @@ def remove_coloured_pixels(image):
 def fuzzymatch(name, aliases_dict):
     minimum_confidence = 70
     if name:
+        # Try using the more simplistic scorer
+        # choice = process.extractOne(name, aliases_dict.keys(), scorer=fuzz.ratio)
         choice = process.extractOne(name, aliases_dict.keys())
         if choice[1] >= minimum_confidence:
             # Debug logging
