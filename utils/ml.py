@@ -6,8 +6,8 @@ import cv2 as cv
 from pathlib import Path
 import logging
 
-char1_list  = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MF",    "PC","PS","PW","RF","SQ","UM","VA"]
-char23_list = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MF","N","PC","PS","PW","RF","SQ","UM","VA"]
+char1_list  = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MA","MF",    "PC","PS","PW","RF","SQ","UM","VA"]
+char23_list = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MA","MF","N","PC","PS","PW","RF","SQ","UM","VA"]
 
 
 # Identify a point character by its big portrait
