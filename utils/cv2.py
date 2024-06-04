@@ -18,7 +18,7 @@ def open_capture(filename: str):
 
 
 # Read a frame at a specific time from a video
-def get_frame_from_video(capture, seconds, GAME_X, GAME_Y, GAME_SIZE, crop=True):
+def get_frame_from_video(capture, seconds, GAME_X, GAME_Y, GAME_SIZE, crop=False):
     capture.set(cv.CAP_PROP_POS_MSEC,(seconds*1000))   
     success, image = capture.read()
     if not success:

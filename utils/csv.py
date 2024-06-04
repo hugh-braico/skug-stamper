@@ -14,6 +14,7 @@ region_list = [
 # list of Skullgirls versions (Following the same naming as TWB)
 # https://github.com/Servan42/TWB_Parser/blob/master/List_of_CharactersCode_Regions_Versions.md
 version_list = [
+    '2024 Balance Patch',
     'Marie Patch',
     'Marie Alpha',
     'Black Dahlia Patch',

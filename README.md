@@ -162,3 +162,4 @@ to show whether TensorFlow is even running on CPU or GPU.
 * Refactor to share functionality between gui and cmdline versions
 * Performance profiling
 * "Interactive mode" for offlines: prompt for usernames / "Same set" button
+* be able to select multiple username.json files

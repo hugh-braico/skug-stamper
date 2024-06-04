@@ -1,10 +1,13 @@
 import numpy as np
 from numpy import argmax
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import tensorflow as tf
+import logging
 from keras.models import load_model
 from glob import glob
 import cv2 as cv
 from pathlib import Path
-import logging
 
 char1_list  = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MA","MF",    "PC","PS","PW","RF","SQ","UM","VA"]
 char23_list = ["AN","BB","BD","BW","CE","DB","EL","FI","FU","MA","MF","N","PC","PS","PW","RF","SQ","UM","VA"]
@@ -20,7 +23,7 @@ def identify_char1(image, model, debug_name="guess"):
     img_array = img_array.astype('float32')
     img_array = img_array / 255.0
     img_array = img_array.reshape(1,height,width,1)
-    output_labels = model.predict(img_array)[0]
+    output_labels = model.predict(img_array, verbose=None)[0]
     guess = char1_list[argmax(output_labels)]
     if logging.DEBUG >= logging.root.level:
         debug_path = f"debug/ml/{debug_name}"
@@ -41,7 +44,7 @@ def identify_char23(image, model, debug_name="guess"):
     img_array = img_array.astype('float32')
     img_array = img_array / 255.0
     img_array = img_array.reshape(1,height,width,3)
-    output_labels = model.predict(img_array)[0]
+    output_labels = model.predict(img_array, verbose=None)[0]
     guess = char23_list[argmax(output_labels)]
     if logging.DEBUG >= logging.root.level:
         debug_path = f"debug/ml/{debug_name}"

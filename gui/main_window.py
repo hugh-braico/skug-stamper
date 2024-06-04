@@ -27,7 +27,6 @@ from utils.csv       import version_list
 from gui.dialogs import NewPresetDialog
 from gui.worker import Worker
 
-
 # Main window class
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -379,6 +378,9 @@ class MainWindow(QMainWindow):
                 self.game_size_input.value(),
                 crop=False
             )
+            # TODO temporary
+            # self.display_widget.setScaledContents(False)
+            ##
             self.display_widget.setPixmap(cv2_to_qpixmap(frame))
             self.display_label.setText(display_timestamp(seconds, self.total_seconds))
 
