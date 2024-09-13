@@ -4,7 +4,9 @@
 
 Identifies sets of Skullgirls in videos using OCR and machine learning. Takes a
 video file and figures out where each set starts, the names of each of the
-players, and the teams that are being played. 
+players, and the teams that are being played. Tesseract picks up the usernames
+of each player, while Tensorflow uses models trained against the character
+portraits to determine which teams are being played.
 
 Outputs a .csv file in [tunawithbacon](https://tunawithbacon.com/) format, and a
 list of timestamps for use in YouTube video descriptions.
