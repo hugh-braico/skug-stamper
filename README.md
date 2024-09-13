@@ -117,31 +117,6 @@ The values are separated into "sections" or "presets" which you can select when
 running using `-p PRESET_NAME` (more on that later). If a preset doesn't have a
 value specified, it will fall back on the DEFAULT value.
 
-### Optional: OCR-friendly level backgrounds mod
-
-If you have a copy of SkullMod and know how to use it, I have made a small
-[level backgrounds mod](https://filedn.eu/laufS0q7iBOJLSpMDyM6Uxk/OCR%20friendly%20backgrounds%20mod.7z)
-that makes it easier to OCR the names on some problematic stages without totally
-butchering how the stage looks. This mod isn't necessary, but it will reduce
-errors and increase speed (fewer errors means fewer retries). 
-
-To install it, unpack your `levels-textures.gfs`, replace the files inside with
-the files from the mod, then repack.
-
-Glass Canopy: remove chandeliers and bright yellow "triangle" things, darken
-background wall slightly
-
-![Glass Canopy](diagrams/canopy.png)
-
-New Meridian: darken window on the right side
-
-![New Meridian](diagrams/meridian.png)
-
-Cathedral: remove the stained glass window (Yeah I know, this doesn't look very
-good. Apologies to the original artist)
-
-![Cathedral](diagrams/cathedral.png)
-
 ### Optional: GPU acceleration
 
 In theory you can set up [GPU support](https://www.tensorflow.org/install/gpu) 
