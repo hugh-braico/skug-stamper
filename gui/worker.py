@@ -104,8 +104,8 @@ class Worker(QObject):
 
         # Set logging level
         logging_format = '%(levelname)s: %(message)s'
-        # logging.basicConfig(level=logging.DEBUG, format=logging_format)
-        logging.basicConfig(level=logging.INFO, format=logging_format)
+        logging.basicConfig(level=logging.DEBUG, format=logging_format)
+        # logging.basicConfig(level=logging.INFO, format=logging_format)
 
         # Showtime. Try to find round starts and guess who's playing and what team
         self.signals.printLine.emit("\nProcessing video...")

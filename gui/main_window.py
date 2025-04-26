@@ -2,6 +2,7 @@
 
 import configparser
 import os
+import re
 
 # qt stuff
 # from PyQt6.QtCore import QSize, QDate, Qt, QThreadPool
@@ -267,6 +268,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.main_container)
 
+    # What happens when you select a preset.
     def populate_form_from_preset(self):
         current_preset_name = self.preset_combobox.currentText()
         current_preset = self.config[current_preset_name]
@@ -296,6 +298,7 @@ class MainWindow(QMainWindow):
         if version in version_list:
             self.version_combobox.setCurrentText(version)
 
+    # Create new preset after confirming from dialog
     def preset_new_button_dialog(self):
         dlg = NewPresetDialog(self)
         if dlg.exec():
@@ -303,6 +306,7 @@ class MainWindow(QMainWindow):
             self.preset_combobox.insertItem(99999, dlg.new_preset_name)
             self.preset_combobox.setCurrentText(dlg.new_preset_name)
 
+    # Save changes to a preset (write to a file at the end)
     def save_current_preset(self):
         current_preset_name = self.preset_combobox.currentText()
         current_preset = self.config[current_preset_name]
@@ -365,6 +369,13 @@ class MainWindow(QMainWindow):
             self.display_slider.setEnabled(True)
             self.set_slider(0)
             self.display_slider.setRange(0, self.total_seconds)
+            # Set the default csv outfile to same path but csv extension
+            self.outfile_name = re.sub(
+                r'\.(mp4|m4v|mov|avi|mkv|webm|wmv)$',
+                '.csv',
+                self.infile_name
+            )
+            self.outfile_label.setText(os.path.basename(self.outfile_name))
             self.preview_video_by_slider()
 
     def set_display_frame(self, seconds):
